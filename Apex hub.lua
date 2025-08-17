@@ -15,7 +15,7 @@ local Window = Rayfield:CreateWindow({
 })
 
 -- Multiplier (how many times to collect per cycle)
-local MULTIPLIER = 500
+local MULTIPLIER = 250
 
 -- Tables
 local orbToggles = {}
