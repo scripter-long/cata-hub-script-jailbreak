@@ -20,6 +20,31 @@ local MULTIPLIER = 250
 local ORB_LOOP_DELAY = 0.1
 local HATCH_LOOP_DELAY = 0.1
 
+-- Settings tab
+local SettingsTab = Window:CreateTab("Settings")
+
+SettingsTab:CreateSlider({
+    Name = "Orb Collect Speed",
+    Range = {0.001, 1},
+    Increment = 0.001,
+    Suffix = " sec delay",
+    CurrentValue = ORB_LOOP_DELAY,
+    Callback = function(value)
+        ORB_LOOP_DELAY = value
+    end
+})
+
+SettingsTab:CreateSlider({
+    Name = "Hatch Speed",
+    Range = {0.001, 1},
+    Increment = 0.001,
+    Suffix = " sec delay",
+    CurrentValue = HATCH_LOOP_DELAY,
+    Callback = function(value)
+        HATCH_LOOP_DELAY = value
+    end
+})
+
 -- Services
 local RepStorage = game:GetService("ReplicatedStorage")
 local orbEvent = RepStorage:WaitForChild("rEvents"):WaitForChild("orbEvent")
@@ -40,7 +65,7 @@ for areaNum=1,5 do
     orbLoopTasks[areaNum] = {}
 
     -- Master toggle
-    local masterToggle = Tab:CreateToggle({
+    Tab:CreateToggle({
         Name = "Toggle All Orbs",
         CurrentValue = false,
         Callback = function(state)
@@ -120,57 +145,45 @@ for _, crystalName in ipairs(hatchCrystals) do
     })
 end
 
--- Teleport buttons (function removed)
--- Teleport buttons (function removed for manual fix)
+-- Teleport buttons (you said you’ll fix these later)
 local tpTab = Window:CreateTab("Teleports")
 
 tpTab:CreateButton({
     Name = "TP to City",
     Callback = function()
-local args = {
-	"travelToArea",
-	workspace:WaitForChild("areaCircles"):WaitForChild("areaCircle")
-}
-game:GetService("ReplicatedStorage"):WaitForChild("rEvents"):WaitForChild("areaTravelRemote"):InvokeServer(unpack(args))
-end
+        local args = {"travelToArea", workspace:WaitForChild("areaCircles"):WaitForChild("areaCircle")}
+        tpEvent:InvokeServer(unpack(args))
+    end
 })
+
 tpTab:CreateButton({
     Name = "TP to Snow City",
     Callback = function()
-local args = {
-	"travelToArea",
-	workspace:WaitForChild("areaCircles"):WaitForChild("areaCircle")
-}
-game:GetService("ReplicatedStorage"):WaitForChild("rEvents"):WaitForChild("areaTravelRemote"):InvokeServer(unpack(args))
-end
+        local args = {"travelToArea", workspace:WaitForChild("areaCircles"):WaitForChild("areaCircle")}
+        tpEvent:InvokeServer(unpack(args))
+    end
 })
+
 tpTab:CreateButton({
     Name = "TP to Magma City",
     Callback = function()
-local args = {
-	"travelToArea",
-	workspace:WaitForChild("areaCircles"):WaitForChild("areaCircle")
-}
-game:GetService("ReplicatedStorage"):WaitForChild("rEvents"):WaitForChild("areaTravelRemote"):InvokeServer(unpack(args))
-end
+        local args = {"travelToArea", workspace:WaitForChild("areaCircles"):WaitForChild("areaCircle")}
+        tpEvent:InvokeServer(unpack(args))
+    end
 })
+
 tpTab:CreateButton({
     Name = "TP to Legends Highway",
     Callback = function()
-local args = {
-	"travelToArea",
-	workspace:WaitForChild("areaCircles"):WaitForChild("areaCircle")
-}
-game:GetService("ReplicatedStorage"):WaitForChild("rEvents"):WaitForChild("areaTravelRemote"):InvokeServer(unpack(args))
-end
+        local args = {"travelToArea", workspace:WaitForChild("areaCircles"):WaitForChild("areaCircle")}
+        tpEvent:InvokeServer(unpack(args))
+    end
 })
+
 tpTab:CreateButton({
     Name = "TP to Speed Jungle",
     Callback = function()
-local args = {
-	"travelToArea",
-	workspace:WaitForChild("areaCircles"):WaitForChild("areaCircle")
-}
-game:GetService("ReplicatedStorage"):WaitForChild("rEvents"):WaitForChild("areaTravelRemote"):InvokeServer(unpack(args))
-end
-}) 
+        local args = {"travelToArea", workspace:WaitForChild("areaCircles"):WaitForChild("areaCircle")}
+        tpEvent:InvokeServer(unpack(args))
+    end
+})
