@@ -16,8 +16,8 @@ local Window = Rayfield:CreateWindow({
 })
 
 -- Constants
-local MULTIPLIER = 250
-local ORB_LOOP_DELAY = 0.1
+local MULTIPLIER = 50
+local ORB_LOOP_DELAY = 0.01
 local HATCH_LOOP_DELAY = 0.1
 
 -- Settings tab
@@ -145,45 +145,21 @@ for _, crystalName in ipairs(hatchCrystals) do
     })
 end
 
--- Teleport buttons (you said you’ll fix these later)
+-- Teleport buttons dynamically based on areaCircle areaName
 local tpTab = Window:CreateTab("Teleports")
+local areaCirclesFolder = workspace:WaitForChild("areaCircles")
 
-tpTab:CreateButton({
-    Name = "TP to City",
-    Callback = function()
-        local args = {"travelToArea", workspace:WaitForChild("areaCircles"):WaitForChild("areaCircle")}
-        tpEvent:InvokeServer(unpack(args))
-    end
-})
+for _, areaCircle in ipairs(areaCirclesFolder:GetChildren()) do
+    local areaValue = areaCircle:FindFirstChild("areaName")
+    if areaValue and areaValue:IsA("StringValue") then
+        local buttonName = areaValue.Value
 
-tpTab:CreateButton({
-    Name = "TP to Snow City",
-    Callback = function()
-        local args = {"travelToArea", workspace:WaitForChild("areaCircles"):WaitForChild("areaCircle")}
-        tpEvent:InvokeServer(unpack(args))
+        tpTab:CreateButton({
+            Name = "TP to "..buttonName,
+            Callback = function()
+                local args = {"travelToArea", areaCircle}
+                tpEvent:InvokeServer(unpack(args))
+            end
+        })
     end
-})
-
-tpTab:CreateButton({
-    Name = "TP to Magma City",
-    Callback = function()
-        local args = {"travelToArea", workspace:WaitForChild("areaCircles"):WaitForChild("areaCircle")}
-        tpEvent:InvokeServer(unpack(args))
-    end
-})
-
-tpTab:CreateButton({
-    Name = "TP to Legends Highway",
-    Callback = function()
-        local args = {"travelToArea", workspace:WaitForChild("areaCircles"):WaitForChild("areaCircle")}
-        tpEvent:InvokeServer(unpack(args))
-    end
-})
-
-tpTab:CreateButton({
-    Name = "TP to Speed Jungle",
-    Callback = function()
-        local args = {"travelToArea", workspace:WaitForChild("areaCircles"):WaitForChild("areaCircle")}
-        tpEvent:InvokeServer(unpack(args))
-    end
-})
+end
