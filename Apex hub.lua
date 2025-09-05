@@ -10,7 +10,7 @@ if not success then
 end
 
 local Window = Rayfield:CreateWindow({
-    Name = "Multi-Area Orb + Hatch + TP",
+    Name = "Multi-Area Orb + Hatch + TP + Rebirth",
     LoadingTitle = "Loading...",
     ConfigurationSaving = { Enabled = false }
 })
@@ -19,11 +19,29 @@ local Window = Rayfield:CreateWindow({
 local MULTIPLIER = 50
 local ORB_LOOP_DELAY = 0.01
 local HATCH_LOOP_DELAY = 0.1
+local AUTO_REBIRTH_DELAY = 1
 
--- Settings tab
-local SettingsTab = Window:CreateTab("Settings")
+-- Services
+local RepStorage = game:GetService("ReplicatedStorage")
+local orbEvent = RepStorage:WaitForChild("rEvents"):WaitForChild("orbEvent")
+local crystalEvent = RepStorage:WaitForChild("rEvents"):WaitForChild("openCrystalRemote")
+local tpEvent = RepStorage:WaitForChild("rEvents"):WaitForChild("areaTravelRemote")
+local rebirthEvent = RepStorage:WaitForChild("rEvents"):WaitForChild("rebirthEvent")
 
-SettingsTab:CreateSlider({
+-- Orb + area setup
+local orbTypes = {"Blue", "Orange", "Yellow", "Red", "Gem"}
+local orbNames = {Blue="Blue Orb", Orange="Orange Orb", Yellow="Yellow Orb", Red="Red Orb", Gem="Gem"}
+local areaLocations = { [1]="City", [2]="Snow City", [3]="Magma City", [4]="Legends Highway", [5]="Speed Jungle" }
+
+-- Loop trackers
+local orbToggles, orbLoopFlags = {}, {}
+local hatchTasks, hatchFlags = {}, {}
+local autoRebirthFlag = false
+
+-- === Misc Tab ===
+local MiscTab = Window:CreateTab("Misc")
+
+MiscTab:CreateSlider({
     Name = "Orb Collect Speed",
     Range = {0.001, 1},
     Increment = 0.001,
@@ -34,7 +52,7 @@ SettingsTab:CreateSlider({
     end
 })
 
-SettingsTab:CreateSlider({
+MiscTab:CreateSlider({
     Name = "Hatch Speed",
     Range = {0.001, 1},
     Increment = 0.001,
@@ -45,24 +63,38 @@ SettingsTab:CreateSlider({
     end
 })
 
--- Services
-local RepStorage = game:GetService("ReplicatedStorage")
-local orbEvent = RepStorage:WaitForChild("rEvents"):WaitForChild("orbEvent")
-local crystalEvent = RepStorage:WaitForChild("rEvents"):WaitForChild("openCrystalRemote")
-local tpEvent = RepStorage:WaitForChild("rEvents"):WaitForChild("areaTravelRemote")
+MiscTab:CreateSlider({
+    Name = "Auto Rebirth Delay",
+    Range = {0.1, 10},
+    Increment = 0.1,
+    Suffix = " sec",
+    CurrentValue = AUTO_REBIRTH_DELAY,
+    Callback = function(value)
+        AUTO_REBIRTH_DELAY = value
+    end
+})
 
--- Orb setup
-local orbTypes = {"Blue", "Orange", "Yellow", "Red", "Gem"}
-local orbNames = {Blue="Blue Orb", Orange="Orange Orb", Yellow="Yellow Orb", Red="Red Orb", Gem="Gem"}
-local areaLocations = { [1]="City", [2]="Snow City", [3]="Magma City", [4]="Legends Highway", [5]="Speed Jungle" }
+MiscTab:CreateToggle({
+    Name = "Auto Rebirth",
+    CurrentValue = false,
+    Callback = function(state)
+        autoRebirthFlag = state
+        if state then
+            task.spawn(function()
+                while autoRebirthFlag do
+                    rebirthEvent:FireServer("rebirthRequest")
+                    task.wait(AUTO_REBIRTH_DELAY)
+                end
+            end)
+        end
+    end
+})
 
-local orbToggles = {}
-local orbLoopTasks = {}
-
+-- === Orb Tabs ===
 for areaNum=1,5 do
     local Tab = Window:CreateTab("Area "..areaNum.." - "..areaLocations[areaNum])
     orbToggles[areaNum] = {}
-    orbLoopTasks[areaNum] = {}
+    orbLoopFlags[areaNum] = {}
 
     -- Master toggle
     Tab:CreateToggle({
@@ -71,13 +103,10 @@ for areaNum=1,5 do
         Callback = function(state)
             for _, orbType in ipairs(orbTypes) do
                 orbToggles[areaNum][orbType] = state
-                if orbLoopTasks[areaNum][orbType] then
-                    task.cancel(orbLoopTasks[areaNum][orbType])
-                    orbLoopTasks[areaNum][orbType] = nil
-                end
+                orbLoopFlags[areaNum][orbType] = state
                 if state then
-                    orbLoopTasks[areaNum][orbType] = task.spawn(function()
-                        while true do
+                    task.spawn(function()
+                        while orbLoopFlags[areaNum][orbType] do
                             for i=1,MULTIPLIER do
                                 orbEvent:FireServer("collectOrb", orbNames[orbType], areaLocations[areaNum])
                             end
@@ -92,20 +121,17 @@ for areaNum=1,5 do
     -- Individual orb toggles
     for _, orbType in ipairs(orbTypes) do
         orbToggles[areaNum][orbType] = false
-        orbLoopTasks[areaNum][orbType] = nil
+        orbLoopFlags[areaNum][orbType] = false
 
         Tab:CreateToggle({
             Name = orbType.." Orb",
             CurrentValue = false,
             Callback = function(state)
                 orbToggles[areaNum][orbType] = state
-                if orbLoopTasks[areaNum][orbType] then
-                    task.cancel(orbLoopTasks[areaNum][orbType])
-                    orbLoopTasks[areaNum][orbType] = nil
-                end
+                orbLoopFlags[areaNum][orbType] = state
                 if state then
-                    orbLoopTasks[areaNum][orbType] = task.spawn(function()
-                        while true do
+                    task.spawn(function()
+                        while orbLoopFlags[areaNum][orbType] do
                             for i=1,MULTIPLIER do
                                 orbEvent:FireServer("collectOrb", orbNames[orbType], areaLocations[areaNum])
                             end
@@ -118,24 +144,22 @@ for areaNum=1,5 do
     end
 end
 
--- Auto-Hatch setup
+-- === Auto Hatch ===
 local hatchCrystals = {"Red Crystal", "Yellow Crystal", "Snow Crystal", "Lava Crystal", "Electro Legends Crystal", "Jungle Crystal"}
-local hatchTasks = {}
-
 local HatchTab = Window:CreateTab("Auto Hatch")
+
 for _, crystalName in ipairs(hatchCrystals) do
+    hatchFlags[crystalName] = false
     hatchTasks[crystalName] = nil
+
     HatchTab:CreateToggle({
         Name = crystalName,
         CurrentValue = false,
         Callback = function(state)
-            if hatchTasks[crystalName] then
-                task.cancel(hatchTasks[crystalName])
-                hatchTasks[crystalName] = nil
-            end
+            hatchFlags[crystalName] = state
             if state then
                 hatchTasks[crystalName] = task.spawn(function()
-                    while true do
+                    while hatchFlags[crystalName] do
                         crystalEvent:InvokeServer("openCrystal", crystalName)
                         task.wait(HATCH_LOOP_DELAY)
                     end
@@ -145,7 +169,7 @@ for _, crystalName in ipairs(hatchCrystals) do
     })
 end
 
--- Teleport buttons dynamically based on areaCircle areaName
+-- === Teleports ===
 local tpTab = Window:CreateTab("Teleports")
 local areaCirclesFolder = workspace:WaitForChild("areaCircles")
 
@@ -157,8 +181,7 @@ for _, areaCircle in ipairs(areaCirclesFolder:GetChildren()) do
         tpTab:CreateButton({
             Name = "TP to "..buttonName,
             Callback = function()
-                local args = {"travelToArea", areaCircle}
-                tpEvent:InvokeServer(unpack(args))
+                tpEvent:InvokeServer("travelToArea", buttonName)
             end
         })
     end
