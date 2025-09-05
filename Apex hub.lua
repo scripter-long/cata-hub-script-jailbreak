@@ -1,3 +1,4 @@
+-- Load Rayfield
 local success, Rayfield = pcall(function()
     local RayfieldCode = game:HttpGet("https://sirius.menu/rayfield")
     local func = loadstring(RayfieldCode)
@@ -9,6 +10,7 @@ if not success then
     return
 end
 
+-- Create Window
 local Window = Rayfield:CreateWindow({
     Name = "Multi-Area Orb + Hatch + TP + Rebirth",
     LoadingTitle = "Loading...",
@@ -41,6 +43,7 @@ local autoRebirthFlag = false
 -- === Misc Tab ===
 local MiscTab = Window:CreateTab("Misc")
 
+-- Orb/Hatch/Rebirth sliders
 MiscTab:CreateSlider({
     Name = "Orb Collect Speed",
     Range = {0.001, 1},
@@ -74,6 +77,7 @@ MiscTab:CreateSlider({
     end
 })
 
+-- Auto Rebirth toggle
 MiscTab:CreateToggle({
     Name = "Auto Rebirth",
     CurrentValue = false,
@@ -84,6 +88,39 @@ MiscTab:CreateToggle({
                 while autoRebirthFlag do
                     rebirthEvent:FireServer("rebirthRequest")
                     task.wait(AUTO_REBIRTH_DELAY)
+                end
+            end)
+        end
+    end
+})
+
+-- === Auto Hoop toggle ===
+local autoHoopFlag = false
+
+MiscTab:CreateToggle({
+    Name = "Auto Hoop",
+    CurrentValue = false,
+    Callback = function(state)
+        autoHoopFlag = state
+        if state then
+            task.spawn(function()
+                while autoHoopFlag do
+                    local player = game.Players.LocalPlayer
+                    local char = player.Character or player.CharacterAdded:Wait()
+                    local hrp = char:WaitForChild("HumanoidRootPart")
+
+                    for _, hoop in pairs(workspace.Hoops:GetChildren()) do
+                        if hoop:IsA("BasePart") then
+                            hoop.CFrame = hrp.CFrame * CFrame.new(0, 0, 0)
+                        elseif hoop:IsA("Model") and hoop:FindFirstChildWhichIsA("BasePart") then
+                            local mainPart = hoop.PrimaryPart or hoop:FindFirstChildWhichIsA("BasePart")
+                            if mainPart then
+                                hoop:SetPrimaryPartCFrame(hrp.CFrame * CFrame.new(0, 0, 0))
+                            end
+                        end
+                    end
+
+                    task.wait(1)
                 end
             end)
         end
